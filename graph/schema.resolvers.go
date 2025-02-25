@@ -7,7 +7,7 @@ package graph
 import (
 	"context"
 	"fmt"
-	"quesurifn/simple-auth/graph/model"
+	model "quesurifn/simple-auth/graph/model"
 )
 
 // Login is the resolver for the login field.
