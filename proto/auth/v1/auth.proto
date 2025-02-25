@@ -1,0 +1,538 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "../grpc/pb";
+
+// Status enum with UNSPECIFIED as first value
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;
+  STATUS_INACTIVE = 2;
+  STATUS_SUSPENDED = 3;
+  STATUS_DELETED = 4;
+  // Reserved for future status values
+  reserved 5 to 10;
+}
+
+// Base types
+message User {
+  string id = 1;
+  string org_id = 2;
+  string external_id = 3;
+  string email = 4;
+  string first_name = 5;
+  string last_name = 6;
+  string phone = 7;
+  string password_hash = 8;
+  string auth_provider = 9;
+  string auth_provider_id = 10;
+  Status status = 11;  // Using Status enum
+  bool email_verified = 12;
+  bool phone_verified = 13;
+  bool mfa_enabled = 14;
+  string mfa_type = 15;
+  string mfa_secret = 16;
+  repeated string role_ids = 17;  // Changed from roles to role_ids
+  map<string, string> attributes = 18;
+  map<string, string> preferences = 19;
+  google.protobuf.Timestamp last_login = 20;
+  int32 login_count = 21;
+  string last_ip = 22;
+  google.protobuf.Timestamp password_changed_at = 23;
+  google.protobuf.Timestamp email_verified_at = 24;
+  google.protobuf.Timestamp created_at = 25;
+  google.protobuf.Timestamp updated_at = 26;
+  string created_by = 27;
+  string updated_by = 28;
+  // Reserved for future use
+  reserved 29 to 40;
+}
+
+message Organization {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string logo_url = 4;
+  string primary_email = 5;
+  string billing_email = 6;
+  string phone = 7;
+  string stripe_customer_id = 8;
+  string subscription_plan = 9;
+  Status status = 10;  // Using Status enum
+  map<string, string> settings = 11;
+  bool is_active = 12;
+  google.protobuf.Timestamp subscription_ends_at = 13;
+  google.protobuf.Timestamp trial_ends_at = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+  string created_by = 17;
+  string updated_by = 18;
+  // Reserved for future use
+  reserved 19 to 30;
+}
+
+message Route {
+  string id = 1;
+  string org_id = 2;
+  string path = 3;
+  string base_path = 4;
+  repeated string methods = 5;
+  string description = 6;
+  map<string, string> metadata = 7;
+  map<string, string> params = 8;
+  bool is_protected = 9;
+  bool is_public = 10;
+  bool is_deprecated = 11;
+  string version = 12;
+  repeated string required_role_ids = 13;  // Changed from required_roles
+  google.protobuf.Timestamp discovered_at = 14;
+  google.protobuf.Timestamp last_accessed = 15;
+  int32 access_count = 16;
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+  string created_by = 19;
+  string updated_by = 20;
+  // Reserved for future use
+  reserved 21 to 30;
+}
+
+message Role {
+  string id = 1;
+  string org_id = 2;
+  string name = 3;
+  string description = 4;
+  bool is_system_role = 5;
+  bool is_default = 6;
+  map<string, string> attributes = 7;
+  map<string, string> permission_ids = 8;  // Changed from permissions
+  int32 priority = 9;
+  Status status = 10;  // Using Status enum
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+  string created_by = 13;
+  string updated_by = 14;
+  // Reserved for future use
+  reserved 15 to 20;
+}
+
+// Common types
+message Error {
+  string code = 1;
+  string message = 2;
+  string details = 3;
+  map<string, string> metadata = 4;
+  // Reserved for future use
+  reserved 5 to 10;
+}
+
+// Audit messages
+message AuditLog {
+  string id = 1;
+  string org_id = 2;
+  string user_id = 3;
+  string action = 4;
+  string resource_type = 5;
+  string resource_id = 6;
+  map<string, string> changes = 7;
+  string ip_address = 8;
+  google.protobuf.Timestamp created_at = 9;
+  // Reserved for future use
+  reserved 10 to 15;
+}
+
+// Auth requests/responses
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+  string org_id = 3;
+  map<string, string> metadata = 4;
+  google.protobuf.Duration session_duration = 5;
+}
+
+// Auth responses
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  User user = 3;
+  int64 expires_in = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  // Reserved for future use
+  reserved 6 to 10;
+}
+
+message LogoutRequest {
+  string token = 1;
+  string org_id = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+  string org_id = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  // Reserved for future use
+  reserved 5 to 10;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+  // Reserved for future use
+  reserved 2 to 5;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  User user = 2;
+  repeated string permission_ids = 3;  // Changed from permissions
+  // Reserved for future use
+  reserved 4 to 10;
+}
+
+// User management requests/responses
+message CreateUserRequest {
+  string org_id = 1;
+  string email = 2;
+  string password = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string phone = 6;
+  repeated string role_ids = 7;  // Changed from roles
+  map<string, string> attributes = 8;
+  map<string, string> preferences = 9;
+  bool send_welcome_email = 10;
+  // Reserved for future use
+  reserved 11 to 15;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string org_id = 2;
+  string email = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string phone = 6;
+  map<string, string> attributes = 7;
+  map<string, string> preferences = 8;
+  Status status = 9;  // Using Status enum
+  // Reserved for future use
+  reserved 10 to 15;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+  string org_id = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message GetUserRequest {
+  string id = 1;
+  string org_id = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message ListUsersRequest {
+  string org_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  repeated string filters = 4;
+  string sort_by = 5;
+  bool ascending = 6;
+  // Reserved for future use
+  reserved 7 to 10;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+  // Reserved for future use
+  reserved 4 to 10;
+}
+
+// Password management messages
+message ForgotPasswordRequest {
+  string email = 1;
+  string org_id = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message ResetPasswordRequest {
+  string token = 1;
+  string new_password = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string current_password = 2;
+  string new_password = 3;
+  // Reserved for future use
+  reserved 4 to 5;
+}
+
+// Organization management messages
+message CreateOrganizationRequest {
+  string name = 1;
+  string display_name = 2;
+  string logo_url = 3;
+  string primary_email = 4;
+  string billing_email = 5;
+  string phone = 6;
+  string subscription_plan = 7;
+  map<string, string> settings = 8;
+  // Reserved for future use
+  reserved 9 to 15;
+}
+
+message UpdateOrganizationRequest {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string logo_url = 4;
+  string primary_email = 5;
+  string billing_email = 6;
+  string phone = 7;
+  map<string, string> settings = 8;
+  Status status = 9;  // Using Status enum
+  // Reserved for future use
+  reserved 10 to 15;
+}
+
+message GetOrganizationRequest {
+  string id = 1;
+  // Reserved for future use
+  reserved 2 to 5;
+}
+
+message DeleteOrganizationRequest {
+  string id = 1;
+  // Reserved for future use
+  reserved 2 to 5;
+}
+
+// Route management messages
+message CreateRouteRequest {
+  string org_id = 1;
+  string path = 2;
+  string base_path = 3;
+  repeated string methods = 4;
+  string description = 5;
+  map<string, string> metadata = 6;
+  bool is_protected = 7;
+  bool is_public = 8;
+  repeated string required_role_ids = 9;  // Changed from required_roles
+  // Reserved for future use
+  reserved 10 to 15;
+}
+
+message UpdateRouteRequest {
+  string id = 1;
+  string org_id = 2;
+  string path = 3;
+  string base_path = 4;
+  repeated string methods = 5;
+  string description = 6;
+  map<string, string> metadata = 7;
+  bool is_protected = 8;
+  bool is_public = 9;
+  repeated string required_role_ids = 10;  // Changed from required_roles
+  // Reserved for future use
+  reserved 11 to 15;
+}
+
+message DeleteRouteRequest {
+  string id = 1;
+  string org_id = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message ListRoutesRequest {
+  string org_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  bool protected_only = 4;
+  bool unprotected_only = 5;
+  string path_prefix = 6;
+  // Reserved for future use
+  reserved 7 to 10;
+}
+
+message ListRoutesResponse {
+  repeated Route routes = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+  // Reserved for future use
+  reserved 4 to 10;
+}
+
+message BatchCreateRoutesRequest {
+  string org_id = 1;
+  repeated CreateRouteRequest routes = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message BatchCreateRoutesResponse {
+  repeated Route routes = 1;
+  repeated Error errors = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message CheckAccessRequest {
+  string token = 1;
+  string path = 2;
+  string method = 3;
+  map<string, string> context = 4;
+  // Reserved for future use
+  reserved 5 to 10;
+}
+
+message CheckAccessResponse {
+  bool allowed = 1;
+  string reason = 2;
+  repeated string required_permission_ids = 3;
+  // Reserved for future use
+  reserved 4 to 10;
+}
+
+message BatchCheckAccessRequest {
+  string token = 1;
+  repeated CheckAccessRequest requests = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message BatchCheckAccessResponse {
+  repeated CheckAccessResponse responses = 1;
+  // Reserved for future use
+  reserved 2 to 5;
+}
+
+// Role management messages
+message CreateRoleRequest {
+  string org_id = 1;
+  string name = 2;
+  string description = 3;
+  map<string, string> permission_ids = 4;  // Changed from permissions
+  bool is_system_role = 5;
+  bool is_default = 6;
+  int32 priority = 7;
+  // Reserved for future use
+  reserved 8 to 15;
+}
+
+message UpdateRoleRequest {
+  string id = 1;
+  string org_id = 2;
+  string name = 3;
+  string description = 4;
+  map<string, string> permission_ids = 5;  // Changed from permissions
+  int32 priority = 6;
+  Status status = 7;  // Using Status enum
+  // Reserved for future use
+  reserved 8 to 15;
+}
+
+message DeleteRoleRequest {
+  string id = 1;
+  string org_id = 2;
+  // Reserved for future use
+  reserved 3 to 5;
+}
+
+message ListRolesRequest {
+  string org_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  bool include_system_roles = 4;
+  // Reserved for future use
+  reserved 5 to 10;
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+  // Reserved for future use
+  reserved 4 to 10;
+}
+
+message AssignRoleRequest {
+  string user_id = 1;
+  string role_id = 2;
+  string org_id = 3;
+  // Reserved for future use
+  reserved 4 to 5;
+}
+
+message UnassignRoleRequest {
+  string user_id = 1;
+  string role_id = 2;
+  string org_id = 3;
+  // Reserved for future use
+  reserved 4 to 5;
+}
+
+// Core authentication and user management service
+service AuthService {
+  // Authentication
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  // User operations
+  rpc CreateUser(CreateUserRequest) returns (User);
+  rpc UpdateUser(UpdateUserRequest) returns (User);
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+  rpc GetUser(GetUserRequest) returns (User);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+
+  // Password management
+  rpc ForgotPassword(ForgotPasswordRequest) returns (google.protobuf.Empty);
+  rpc ResetPassword(ResetPasswordRequest) returns (google.protobuf.Empty);
+  rpc ChangePassword(ChangePasswordRequest) returns (google.protobuf.Empty);
+
+  // Organization management
+  rpc CreateOrganization(CreateOrganizationRequest) returns (Organization);
+  rpc UpdateOrganization(UpdateOrganizationRequest) returns (Organization);
+  rpc GetOrganization(GetOrganizationRequest) returns (Organization);
+  rpc DeleteOrganization(DeleteOrganizationRequest) returns (google.protobuf.Empty);
+
+  // Route management
+  rpc CreateRoute(CreateRouteRequest) returns (Route);
+  rpc UpdateRoute(UpdateRouteRequest) returns (Route);
+  rpc DeleteRoute(DeleteRouteRequest) returns (google.protobuf.Empty);
+  rpc ListRoutes(ListRoutesRequest) returns (ListRoutesResponse);
+  rpc BatchCreateRoutes(BatchCreateRoutesRequest) returns (BatchCreateRoutesResponse);
+  rpc CheckAccess(CheckAccessRequest) returns (CheckAccessResponse);
+  rpc BatchCheckAccess(BatchCheckAccessRequest) returns (BatchCheckAccessResponse);
+
+  // Role management
+  rpc CreateRole(CreateRoleRequest) returns (Role);
+  rpc UpdateRole(UpdateRoleRequest) returns (Role);
+  rpc DeleteRole(DeleteRoleRequest) returns (google.protobuf.Empty);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+  rpc AssignRole(AssignRoleRequest) returns (google.protobuf.Empty);
+  rpc UnassignRole(UnassignRoleRequest) returns (google.protobuf.Empty);
+}

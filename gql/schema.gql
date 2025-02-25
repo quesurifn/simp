@@ -1,0 +1,359 @@
+"""
+Authentication and User Management GraphQL Schema
+"""
+
+scalar Duration
+scalar Timestamp
+
+enum Status {
+    UNSPECIFIED
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+    DELETED
+}
+
+type User {
+    id: ID!
+    orgId: ID!
+    externalId: String
+    email: String!
+    firstName: String
+    lastName: String
+    phone: String
+    passwordHash: String
+    authProvider: String
+    authProviderId: String
+    status: Status!
+    emailVerified: Boolean!
+    phoneVerified: Boolean!
+    mfaEnabled: Boolean!
+    mfaType: String
+    mfaSecret: String
+    roleIds: [ID!]
+    attributes: JSON
+    preferences: JSON
+    lastLogin: Timestamp
+    loginCount: Int
+    lastIp: String
+    passwordChangedAt: Timestamp
+    emailVerifiedAt: Timestamp
+    createdAt: Timestamp!
+    updatedAt: Timestamp!
+    createdBy: ID!
+    updatedBy: ID!
+}
+
+type Organization {
+    id: ID!
+    name: String!
+    displayName: String
+    logoUrl: String
+    primaryEmail: String!
+    billingEmail: String
+    phone: String
+    stripeCustomerId: String
+    subscriptionPlan: String
+    status: Status!
+    settings: JSON
+    isActive: Boolean!
+    subscriptionEndsAt: Timestamp
+    trialEndsAt: Timestamp
+    createdAt: Timestamp!
+    updatedAt: Timestamp!
+    createdBy: ID!
+    updatedBy: ID!
+}
+
+type Route {
+    id: ID!
+    orgId: ID!
+    path: String!
+    basePath: String
+    methods: [String!]!
+    description: String
+    metadata: JSON
+    params: JSON
+    isProtected: Boolean!
+    isPublic: Boolean!
+    isDeprecated: Boolean!
+    version: String
+    requiredRoleIds: [ID!]
+    discoveredAt: Timestamp
+    lastAccessed: Timestamp
+    accessCount: Int
+    createdAt: Timestamp!
+    updatedAt: Timestamp!
+    createdBy: ID!
+    updatedBy: ID!
+}
+
+type Role {
+    id: ID!
+    orgId: ID!
+    name: String!
+    description: String
+    isSystemRole: Boolean!
+    isDefault: Boolean!
+    attributes: JSON
+    permissionIds: JSON
+    priority: Int
+    status: Status!
+    createdAt: Timestamp!
+    updatedAt: Timestamp!
+    createdBy: ID!
+    updatedBy: ID!
+}
+
+type Error {
+    code: String!
+    message: String!
+    details: String
+    metadata: JSON
+}
+
+type AuditLog {
+    id: ID!
+    orgId: ID!
+    userId: ID!
+    action: String!
+    resourceType: String!
+    resourceId: ID!
+    changes: JSON
+    ipAddress: String
+    createdAt: Timestamp!
+}
+
+type LoginResponse {
+    accessToken: String!
+    refreshToken: String!
+    user: User!
+    expiresIn: Int!
+    expiresAt: Timestamp!
+}
+
+type RefreshTokenResponse {
+    accessToken: String!
+    refreshToken: String!
+    expiresIn: Int!
+    expiresAt: Timestamp!
+}
+
+type ValidateTokenResponse {
+    valid: Boolean!
+    user: User
+    permissionIds: [ID!]
+}
+
+type ListUsersResponse {
+    users: [User!]!
+    nextPageToken: String
+    totalCount: Int!
+}
+
+type ListRoutesResponse {
+    routes: [Route!]!
+    nextPageToken: String
+    totalCount: Int!
+}
+
+type BatchCreateRoutesResponse {
+    routes: [Route!]!
+    errors: [Error!]
+}
+
+type CheckAccessResponse {
+    allowed: Boolean!
+    reason: String
+    requiredPermissionIds: [ID!]
+}
+
+type BatchCheckAccessResponse {
+    responses: [CheckAccessResponse!]!
+}
+
+type ListRolesResponse {
+    roles: [Role!]!
+    nextPageToken: String
+    totalCount: Int!
+}
+
+input LoginInput {
+    email: String!
+    password: String!
+    orgId: ID!
+    metadata: JSON
+    sessionDuration: Duration
+}
+
+input CreateUserInput {
+    orgId: ID!
+    email: String!
+    password: String!
+    firstName: String
+    lastName: String
+    phone: String
+    roleIds: [ID!]
+    attributes: JSON
+    preferences: JSON
+    sendWelcomeEmail: Boolean
+}
+
+input UpdateUserInput {
+    id: ID!
+    orgId: ID!
+    email: String
+    firstName: String
+    lastName: String
+    phone: String
+    attributes: JSON
+    preferences: JSON
+    status: Status
+}
+
+input CreateOrganizationInput {
+    name: String!
+    displayName: String
+    logoUrl: String
+    primaryEmail: String!
+    billingEmail: String
+    phone: String
+    subscriptionPlan: String
+    settings: JSON
+}
+
+input UpdateOrganizationInput {
+    id: ID!
+    name: String
+    displayName: String
+    logoUrl: String
+    primaryEmail: String
+    billingEmail: String
+    phone: String
+    settings: JSON
+    status: Status
+}
+
+input CreateRouteInput {
+    orgId: ID!
+    path: String!
+    basePath: String
+    methods: [String!]!
+    description: String
+    metadata: JSON
+    isProtected: Boolean!
+    isPublic: Boolean!
+    requiredRoleIds: [ID!]
+}
+
+input UpdateRouteInput {
+    id: ID!
+    orgId: ID!
+    path: String
+    basePath: String
+    methods: [String!]
+    description: String
+    metadata: JSON
+    isProtected: Boolean
+    isPublic: Boolean
+    requiredRoleIds: [ID!]
+}
+
+input CreateRoleInput {
+    orgId: ID!
+    name: String!
+    description: String
+    permissionIds: JSON
+    isSystemRole: Boolean
+    isDefault: Boolean
+    priority: Int
+}
+
+input UpdateRoleInput {
+    id: ID!
+    orgId: ID!
+    name: String
+    description: String
+    permissionIds: JSON
+    priority: Int
+    status: Status
+}
+
+input ListUsersFilter {
+    orgId: ID!
+    pageSize: Int
+    pageToken: String
+    filters: [String!]
+    sortBy: String
+    ascending: Boolean
+}
+
+input ListRoutesFilter {
+    orgId: ID!
+    pageSize: Int
+    pageToken: String
+    protectedOnly: Boolean
+    unprotectedOnly: Boolean
+    pathPrefix: String
+}
+
+input ListRolesFilter {
+    orgId: ID!
+    pageSize: Int
+    pageToken: String
+    includeSystemRoles: Boolean
+}
+
+input CheckAccessInput {
+    token: String!
+    path: String!
+    method: String!
+    context: JSON
+}
+
+input BatchCheckAccessInput {
+    token: String!
+    requests: [CheckAccessInput!]!
+}
+
+type Query {
+    validateToken(token: String!): ValidateTokenResponse!
+    getUser(id: ID!, orgId: ID!): User
+    listUsers(filter: ListUsersFilter!): ListUsersResponse!
+    getOrganization(id: ID!): Organization
+    listRoutes(filter: ListRoutesFilter!): ListRoutesResponse!
+    listRoles(filter: ListRolesFilter!): ListRolesResponse!
+    checkAccess(input: CheckAccessInput!): CheckAccessResponse!
+    batchCheckAccess(input: BatchCheckAccessInput!): BatchCheckAccessResponse!
+}
+
+type Mutation {
+    login(input: LoginInput!): LoginResponse!
+    logout(token: String!, orgId: ID!): Boolean!
+    refreshToken(refreshToken: String!, orgId: ID!): RefreshTokenResponse!
+
+    createUser(input: CreateUserInput!): User!
+    updateUser(input: UpdateUserInput!): User!
+    deleteUser(id: ID!, orgId: ID!): Boolean!
+
+    forgotPassword(email: String!, orgId: ID!): Boolean!
+    resetPassword(token: String!, newPassword: String!): Boolean!
+    changePassword(userId: ID!, currentPassword: String!, newPassword: String!): Boolean!
+
+    createOrganization(input: CreateOrganizationInput!): Organization!
+    updateOrganization(input: UpdateOrganizationInput!): Organization!
+    deleteOrganization(id: ID!): Boolean!
+
+    createRoute(input: CreateRouteInput!): Route!
+    updateRoute(input: UpdateRouteInput!): Route!
+    deleteRoute(id: ID!, orgId: ID!): Boolean!
+    batchCreateRoutes(orgId: ID!, routes: [CreateRouteInput!]!): BatchCreateRoutesResponse!
+
+    createRole(input: CreateRoleInput!): Role!
+    updateRole(input: UpdateRoleInput!): Role!
+    deleteRole(id: ID!, orgId: ID!): Boolean!
+    assignRole(userId: ID!, roleId: ID!, orgId: ID!): Boolean!
+    unassignRole(userId: ID!, roleId: ID!, orgId: ID!): Boolean!
+}
+
+scalar JSON
