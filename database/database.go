@@ -13,20 +13,21 @@ type Database struct {
 	connectionURI string
 	logger        *logger.Logger
 	ctx           context.Context
-	config        DatabaseConfig
+	config        Config
+	Instance      *sql.DB
 }
 
-type DatabaseConfig struct {
+type Config struct {
 	MaxConnections    int
 	MinConnections    int
 	MaxConnectionTime time.Duration
 }
 
-func NewDatabase(uri string, logger *logger.Logger, config DatabaseConfig) *Database {
+func NewDatabase(uri string, logger *logger.Logger, config Config) *Database {
 	return &Database{
 		connectionURI: uri,
 		logger:        logger,
-		config: DatabaseConfig{
+		config: Config{
 			MaxConnectionTime: config.MaxConnectionTime,
 			MinConnections:    config.MinConnections,
 			MaxConnections:    config.MaxConnections,
@@ -34,23 +35,34 @@ func NewDatabase(uri string, logger *logger.Logger, config DatabaseConfig) *Data
 	}
 }
 
-func (db Database) Connect() (*sql.DB, error) {
+func (db *Database) Connect() error {
 	poolConfig, err := pgxpool.ParseConfig(db.connectionURI)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	poolConfig.MaxConns = int32(db.config.MaxConnections)
 	poolConfig.MinConns = int32(db.config.MinConnections)
 	poolConfig.MaxConnLifetime = db.config.MaxConnectionTime
 	pool, err := pgxpool.NewWithConfig(db.ctx, poolConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dbInstance := stdlib.OpenDBFromPool(pool)
 
 	// drv := entsql.OpenDB(dialect.Postgres, db)
 	// client := ent.NewClient(ent.Driver(drv))
+	db.Instance = dbInstance
 
-	return dbInstance, nil
+	return nil
+}
+
+func (db *Database) Close() error {
+	err := db.Instance.Close()
+	if err != nil {
+		return err
+	}
+	db.Instance = nil
+
+	return nil
 }
